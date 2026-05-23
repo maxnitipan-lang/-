@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Battle Arena</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & Kanit -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Kanit', sans-serif;
+            background-color: #0b0f19;
+            user-select: none;
+            overflow-x: hidden;
+        }
+        .orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        /* สไตล์กรอบนีออนและการตกแต่งตามภาพต้นฉบับ */
+        .neon-border-blue {
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.5), inset 0 0 10px rgba(56, 189, 248, 0.2);
+            border: 2px solid rgba(56, 189, 248, 0.8);
+        }
+        .neon-border-red {
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.5), inset 0 0 10px rgba(239, 68, 68, 0.2);
+            border: 2px solid rgba(239, 68, 68, 0.8);
+        }
+        .neon-border-green {
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.8), inset 0 0 10px rgba(34, 197, 94, 0.4);
+            border: 2px solid rgba(34, 197, 94, 1);
+        }
+        .neon-text-blue {
+            text-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
+        }
+        .neon-text-red {
+            text-shadow: 0 0 8px rgba(239, 68, 68, 0.8);
+        }
+        .neon-text-green {
+            text-shadow: 0 0 12px rgba(34, 197, 94, 0.9);
+        }
+        
+        /* อนิเมชันตัวละคร */
+        @keyframes idle-player {
+            0%, 100% { transform: translateY(0) scaleY(1); }
+            50% { transform: translateY(-4px) scaleY(0.98); }
+        }
+        @keyframes idle-enemy {
+            0%, 100% { transform: translateY(0) scaleX(1); }
+            50% { transform: translateY(-3px) scaleX(1.02); }
+        }
+        
+        .idle-player {
+            animation: idle-player 2s ease-in-out infinite;
+        }
+        .idle-enemy {
+            animation: idle-enemy 2.5s ease-in-out infinite;
+        }
+
+        /* เอฟเฟกต์การพุ่งโจมตี */
+        @keyframes attack-player {
+            0% { transform: translateX(0) scale(1); }
+            20% { transform: translateX(-30px) scale(0.95); }
+            40% { transform: translateX(250px) scale(1.1); }
+            80% { transform: translateX(250px) scale(1.1); }
+            100% { transform: translateX(0) scale(1); }
+        }
+        @keyframes attack-enemy {
+            0% { transform: translateX(0) scale(1); }
+            20% { transform: translateX(30px) scale(0.95); }
+            40% { transform: translateX(-250px) scale(1.1); }
+            80% { transform: translateX(-250px) scale(1.1); }
+            100% { transform: translateX(0) scale(1); }
+        }
+        
+        .attacking-player {
+            animation: attack-player 0.8s ease-in-out forwards !important;
+        }
+        .attacking-enemy {
+            animation: attack-enemy 0.8s ease-in-out forwards !important;
+        }
+
+        /* ออนิเมชันโดนดาเมจ */
+        @keyframes damage-shake {
+            0%, 100% { transform: translateX(0); filter: brightness(1) sepia(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); filter: brightness(1.5) sepia(1) saturate(5) hue-rotate(-50deg); }
+            20%, 40%, 60%, 80% { transform: translateX(10px); filter: brightness(1.5) sepia(1) saturate(5) hue-rotate(-50deg); }
+        }
+        .hit {
+            animation: damage-shake 0.5s ease-in-out forwards !important;
+        }
+
+        /* หน้าจอสั่น */
+        @keyframes screen-shake {
+            0%, 100% { transform: translate(0, 0); }
+            10%, 30%, 50%, 70%, 90% { transform: translate(-5px, 5px); }
+            20%, 40%, 60%, 80% { transform: translate(5px, -5px); }
+        }
+        .shake-screen {
+            animation: screen-shake 0.4s ease-in-out;
+        }
+
+        /* เลขดาเมจพุ่งขึ้น */
+        @keyframes damage-float {
+            0% { opacity: 0; transform: translateY(0) scale(0.5); }
+            20% { opacity: 1; transform: translateY(-40px) scale(1.2); }
+            80% { opacity: 1; transform: translateY(-60px) scale(1); }
+            100% { opacity: 0; transform: translateY(-80px) scale(0.8); }
+        }
+        .damage-number {
+            animation: damage-float 1s ease-out forwards;
+        }
+
+        /* ปุ่มเลือกคำตอบสไตล์หกเหลี่ยมจำลอง */
+        .quiz-btn {
+            position: relative;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 2px solid #334155;
+            clip-path: polygon(5% 0%, 95% 0%, 100% 50%, 95% 100%, 5% 100%, 0% 50%);
+            transition: all 0.2s ease;
+        }
+        .quiz-btn:hover:not(:disabled) {
+            border-color: #38bdf8;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            transform: scale(1.02);
+        }
+        .quiz-btn:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+        .quiz-btn.correct {
+            border-color: #22c55e !important;
+            background: linear-gradient(135deg, #052e16 0%, #14532d 100%) !important;
+            box-shadow: 0 0 15px rgba(34,197,94,0.4);
+        }
+        .quiz-btn.wrong {
+            border-color: #ef4444 !important;
+            background: linear-gradient(135deg, #451a03 0%, #7f1d1d 100%) !important;
+            box-shadow: 0 0 15px rgba(239,68,68,0.4);
+        }
+
+        /* แถบเลือด */
+        .hp-bar-fill {
+            transition: width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4 md:p-8">
+
+    <!-- ส่วนหลักของเกมการ์ดสเตจ -->
+    <div id="game-container" class="relative w-full max-w-5xl bg-[#111827] rounded-2xl border-4 border-[#1e293b] p-6 shadow-2xl overflow-hidden">
+        
+        <!-- แถบด้านบน: ชื่อการต่อสู้ และ สถานะพลังชีวิต -->
+        <div class="grid grid-cols-12 gap-4 items-center mb-6">
+            
+            <!-- ฝั่ง PLAYER -->
+            <div class="col-span-5 flex flex-col">
+                <div class="flex justify-between items-end mb-1">
+                    <span class="orbitron text-xl md:text-3xl font-black text-sky-400 italic neon-text-blue">PLAYER</span>
+                    <span id="player-hp-text" class="orbitron text-sm md:text-lg font-bold text-gray-300">100/100</span>
+                </div>
+                <!-- หลอดเลือดผู้เล่น -->
+                <div class="w-full h-5 md:h-7 bg-gray-900 border border-sky-500 rounded-md overflow-hidden p-[2px]">
+                    <div id="player-hp-bar" class="hp-bar-fill h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-sm" style="width: 100%;"></div>
+                </div>
+                <div class="mt-2 flex justify-between items-center">
+                    <span class="text-white text-sm md:text-base font-semibold">KNIGHT <span class="text-xs text-gray-400 block sm:inline sm:ml-2">(2D Anime)</span></span>
+                </div>
+            </div>
+
+            <!-- ตรงกลาง: หัวข้อหลัก -->
+            <div class="col-span-2 flex flex-col items-center justify-center text-center">
+                <span class="orbitron text-xs md:text-sm font-bold text-gray-400 tracking-wider">QUIZ BATTLE ARENA</span>
+                <div class="my-1 py-1 px-3 bg-red-950/80 border border-red-700 rounded-md">
+                    <span class="orbitron text-xs md:text-base font-black text-red-500 tracking-widest italic animate-pulse">VS</span>
+                </div>
+            </div>
+
+            <!-- ฝั่ง ENEMY -->
+            <div class="col-span-5 flex flex-col items-end">
+                <div class="flex justify-between items-end w-full mb-1">
+                    <span id="enemy-hp-text" class="orbitron text-sm md:text-lg font-bold text-gray-300">100/100</span>
+                    <span class="orbitron text-xl md:text-3xl font-black text-red-500 italic neon-text-red">ENEMY</span>
+                </div>
+                <!-- หลอดเลือดศัตรู -->
+                <div class="w-full h-5 md:h-7 bg-gray-900 border border-red-500 rounded-md overflow-hidden p-[2px]">
+                    <div id="enemy-hp-bar" class="hp-bar-fill h-full bg-gradient-to-l from-red-500 to-rose-400 rounded-sm" style="width: 100%;"></div>
+                </div>
+                <div class="mt-2 text-right">
+                    <span class="text-white text-sm md:text-base font-semibold">ORC WARRIOR</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ฉากสนามรบ (Battleground) -->
+        <div class="relative w-full h-[320px] md:h-[400px] bg-gradient-to-b from-[#0f172a] via-[#111827] to-[#1e1b4b] rounded-xl border-2 border-slate-800 flex justify-between items-end p-6 overflow-hidden mb-6">
+            
+            <!-- เอฟเฟกต์บรรยากาศพื้นหลังแบบกริดดิจิตอล -->
+            <div class="absolute inset-0 bg-[radial-gradient(#1e1b4b_1px,transparent_1px)] [background-size:16px_16px] opacity-40"></div>
+            
+            <!-- ข้อความประกาศ "BATTLE!" หรือสถานะตรงกลาง -->
+            <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-10">
+                <div class="orbitron text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-yellow-400 to-red-600 tracking-wider italic select-none">
+                    BATTLE!
+                </div>
+                <div id="battle-announcer" class="text-emerald-400 font-semibold text-sm md:text-lg mt-2 tracking-wide neon-text-green text-center h-6"></div>
+            </div>
+
+            <!-- ตัวละครผู้เล่น: อัศวิน (Vector SVG) -->
+            <div id="player-sprite-wrapper" class="relative z-10 w-44 h-64 md:w-56 md:h-80 flex flex-col items-center justify-end">
+                <div id="player-sprite" class="idle-player w-full h-full flex items-end justify-center transition-transform duration-100">
+                    <!-- SVG ตัวละครอัศวินที่วาดอย่างประณีตพร้อมเงาและดาบ -->
+                    <svg viewBox="0 0 100 120" class="w-full h-full drop-shadow-[0_8px_16px_rgba(56,189,248,0.3)]">
+                        <!-- Shadow -->
+                        <ellipse cx="50" cy="115" rx="30" ry="8" fill="rgba(0,0,0,0.4)" />
+                        <!-- Boots/Legs -->
+                        <path d="M38 95 L34 115 L44 115 Z" fill="#64748b" stroke="#334155" stroke-width="1.5" />
+                        <path d="M62 95 L66 115 L56 115 Z" fill="#64748b" stroke="#334155" stroke-width="1.5" />
+                        <path d="M38 75 L40 95" stroke="#475569" stroke-width="6" stroke-linecap="round" />
+                        <path d="M62 75 L60 95" stroke="#475569" stroke-width="6" stroke-linecap="round" />
+                        
+                        <!-- Torso/Armor -->
+                        <path d="M32 45 L68 45 L62 80 L38 80 Z" fill="#475569" />
+                        <path d="M36 45 L64 45 L58 75 L42 75 Z" fill="#94a3b8" />
+                        <!-- Blue Cloth/Details -->
+                        <path d="M45 45 L55 45 L55 80 L45 80 Z" fill="#1d4ed8" />
+                        <!-- Gold Trim -->
+                        <path d="M32 45 L68 45" stroke="#fbbf24" stroke-width="2.5" />
+                        
+                        <!-- Shoulders/Shield-like pauldrons -->
+                        <circle cx="30" cy="48" r="7" fill="#cbd5e1" stroke="#475569" />
+                        <circle cx="70" cy="48" r="7" fill="#cbd5e1" stroke="#475569" />
+                        
+                        <!-- Left Arm (Holding Sword) -->
+                        <path d="M28 48 L15 65 L22 75" fill="none" stroke="#475569" stroke-width="6" stroke-linecap="round" />
+                        <!-- SWORD -->
+                        <g transform="translate(14, 75) rotate(-35)">
+                            <!-- Hilt -->
+                            <rect x="-3" y="0" width="6" height="15" fill="#78350f" rx="1" />
+                            <!-- Guard -->
+                            <rect x="-10" y="-3" width="20" height="4" fill="#fbbf24" rx="1" />
+                            <!-- Blade -->
+                            <path d="M-4 -3 L-4 -45 L0 -55 L4 -45 L4 -3 Z" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1" />
+                            <line x1="0" y1="-3" x2="0" y2="-45" stroke="#cbd5e1" stroke-width="1" />
+                        </g>
+
+                        <!-- Right Arm (Ready Fist) -->
+                        <path d="M72 48 L82 60 L78 70" fill="none" stroke="#475569" stroke-width="6" stroke-linecap="round" />
+                        <circle cx="78" cy="71" r="4.5" fill="#fca5a5" />
+
+                        <!-- Head & Helmet -->
+                        <circle cx="50" cy="30" r="14" fill="#fca5a5" />
+                        <!-- Hair (Anime Style Brown) -->
+                        <path d="M34 26 Q50 8 66 26 Q60 16 50 20 Q40 16 34 26 Z" fill="#78350f" />
+                        <path d="M35 24 L42 34 L46 26 L50 35 L54 26 L58 34 L65 24" fill="none" stroke="#78350f" stroke-width="3" stroke-linecap="round" />
+                        <!-- Helmet visor -->
+                        <path d="M34 22 L66 22 L62 10 L38 10 Z" fill="#64748b" />
+                        <path d="M38 10 L50 -2 L62 10" fill="none" stroke="#ef4444" stroke-width="3" stroke-linecap="round" /> <!-- Plume -->
+                        <!-- Eyes -->
+                        <ellipse cx="44" cy="30" rx="2" ry="3" fill="#1e293b" />
+                        <ellipse cx="56" cy="30" rx="2" ry="3" fill="#1e293b" />
+                        <path d="M42 26 L47 28" stroke="#000" stroke-width="1.5" />
+                        <path d="M58 26 L53 28" stroke="#000" stroke-width="1.5" />
+                    </svg>
+                </div>
+                <!-- READY! badge -->
+                <div id="ready-badge" class="absolute -bottom-4 bg-emerald-950/90 border-2 border-emerald-500 px-4 py-1 rounded-full text-xs md:text-sm font-black text-emerald-400 italic tracking-wider neon-border-green uppercase animate-bounce">
+                    READY!
+                </div>
+                <div id="player-damage-pos" class="absolute top-1/4 left-1/2 -translate-x-1/2"></div>
+            </div>
+
+            <!-- ตัวละครศัตรู: ออร์คป่า (Vector SVG) -->
+            <div id="enemy-sprite-wrapper" class="relative z-10 w-44 h-64 md:w-56 md:h-80 flex flex-col items-center justify-end">
+                <div id="enemy-sprite" class="idle-enemy w-full h-full flex items-end justify-center transition-transform duration-100">
+                    <!-- SVG ตัวละครออร์คนักรบสายเถื่อน -->
+                    <svg viewBox="0 0 100 120" class="w-full h-full drop-shadow-[0_8px_16px_rgba(239,68,68,0.3)]">
+                        <!-- Shadow -->
+                        <ellipse cx="50" cy="115" rx="32" ry="8" fill="rgba(0,0,0,0.5)" />
+                        <!-- Huge Legs -->
+                        <path d="M35 90 L28 115 L40 115 Z" fill="#451a03" stroke="#270505" stroke-width="2" />
+                        <path d="M65 90 L72 115 L60 115 Z" fill="#451a03" stroke="#270505" stroke-width="2" />
+                        <path d="M36 75 L34 95" stroke="#15803d" stroke-width="8" stroke-linecap="round" />
+                        <path d="M64 75 L66 95" stroke="#15803d" stroke-width="8" stroke-linecap="round" />
+                        
+                        <!-- Fur Loincloth -->
+                        <path d="M30 70 L70 70 L65 90 L50 98 L35 90 Z" fill="#78350f" stroke="#451a03" stroke-width="1.5" />
+                        <path d="M35 70 L65 70 L60 85 L50 92 L40 85 Z" fill="#b45309" />
+                        <path d="M30 70 L70 70" stroke="#1e293b" stroke-width="4" /> <!-- Belt -->
+                        <circle cx="50" cy="70" r="5" fill="#94a3b8" /> <!-- Buckle -->
+
+                        <!-- Muscular Torso -->
+                        <path d="M24 40 L76 40 L70 74 L30 74 Z" fill="#16a34a" />
+                        <!-- Chest Muscles Definition -->
+                        <path d="M30 46 Q50 54 70 46" fill="none" stroke="#14532d" stroke-width="3" />
+                        <path d="M50 48 L50 70" stroke="#14532d" stroke-width="2" />
+                        <!-- Leather Harness -->
+                        <path d="M26 42 L68 70" stroke="#78350f" stroke-width="5" stroke-linecap="round" />
+                        <path d="M26 42 L68 70" stroke="#fbbf24" stroke-width="1" stroke-linecap="round" />
+
+                        <!-- Left Muscular Arm -->
+                        <path d="M22 42 L10 55 L16 70" fill="none" stroke="#16a34a" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
+                        <circle cx="16" cy="71" r="5.5" fill="#16a34a" />
+                        <!-- Spiked iron gauntlet -->
+                        <rect x="8" y="55" width="6" height="12" fill="#475569" transform="rotate(15, 8, 55)" />
+
+                        <!-- Right Muscular Arm (Raised Fist) -->
+                        <path d="M78 42 L90 52 L84 66" fill="none" stroke="#16a34a" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
+                        <circle cx="84" cy="67" r="5.5" fill="#16a34a" />
+
+                        <!-- Angry Orc Head -->
+                        <path d="M34 26 Q50 16 66 26 L62 42 L38 42 Z" fill="#16a34a" />
+                        <!-- Pointy Ears -->
+                        <path d="M34 28 L20 22 L32 34 Z" fill="#15803d" />
+                        <path d="M66 28 L80 22 L68 34 Z" fill="#15803d" />
+                        <!-- Red Glowing Eyes -->
+                        <ellipse cx="44" cy="30" rx="3" ry="1.5" fill="#ef4444" />
+                        <ellipse cx="56" cy="30" rx="3" ry="1.5" fill="#ef4444" />
+                        <!-- Angry brows -->
+                        <path d="M38 27 L48 30" stroke="#000" stroke-width="2.5" />
+                        <path d="M62 27 L52 30" stroke="#000" stroke-width="2.5" />
+                        <!-- Tusks / Teeth -->
+                        <path d="M42 38 L44 33 L47 38" fill="#fff" />
+                        <path d="M58 38 L56 33 L53 38" fill="#fff" />
+                        <path d="M40 38 Q50 43 60 38" fill="none" stroke="#000" stroke-width="2" />
+                    </svg>
+                </div>
+                <!-- ENEMY BADGE -->
+                <div class="absolute -bottom-4 bg-red-950/90 border-2 border-red-500 px-4 py-1 rounded-full text-xs md:text-sm font-black text-red-400 italic tracking-wider neon-border-red uppercase">
+                    ORC WARRIOR
+                </div>
+                <div id="enemy-damage-pos" class="absolute top-1/4 left-1/2 -translate-x-1/2"></div>
+            </div>
+
+        </div>
+
+        <!-- หน้าจอแสดงโจทย์คำถามและตัวเลือกตอบ (UI ด้านล่าง) -->
+        <div id="quiz-panel" class="bg-[#1f2937] rounded-xl border border-slate-700 p-4 md:p-6 flex flex-col justify-between min-h-[220px]">
+            <!-- ส่วนข้อมูลคำถามและเวลา -->
+            <div class="flex justify-between items-center mb-4 border-b border-slate-700 pb-2">
+                <span id="question-number" class="orbitron text-lg md:text-xl font-extrabold text-amber-400 tracking-wider">QUESTION 1:</span>
+                <!-- แถบจับเวลาถอยหลังถอยหลัง (Timer Bar) -->
+                <div class="flex items-center gap-2">
+                    <span class="orbitron text-xs font-bold text-gray-400">TIME:</span>
+                    <div class="w-24 md:w-36 h-3 bg-gray-950 border border-amber-500 rounded-full overflow-hidden">
+                        <div id="timer-bar-fill" class="h-full bg-amber-500" style="width: 100%; transition: width 0.1s linear;"></div>
+                    </div>
+                    <span id="timer-text" class="orbitron text-xs md:text-sm font-bold text-amber-400 w-5 text-right">15</span>
+                </div>
+            </div>
+
+            <!-- คำถามหลัก -->
+            <div class="text-center my-2 md:my-4">
+                <h2 id="question-text" class="text-white text-base md:text-xl font-semibold leading-relaxed">
+                    WHAT KEYWORD DECLARES A VARIABLE THAT CANNOT BE REASSIGNED?
+                </h2>
+            </div>
+
+            <!-- ตัวเลือกตอบ A, B, C, D แบ่ง 2 คอลัมน์สมมาตรแบบในรูปภาพ -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                <button onclick="submitAnswer(0)" id="btn-0" class="quiz-btn text-left py-3 px-6 text-sm md:text-base text-gray-200 font-medium flex items-center gap-3">
+                    <span class="orbitron font-extrabold text-sky-400 text-base md:text-lg">A)</span> 
+                    <span id="choice-0" class="choice-text">var</span>
+                </button>
+                <button onclick="submitAnswer(1)" id="btn-1" class="quiz-btn text-left py-3 px-6 text-sm md:text-base text-gray-200 font-medium flex items-center gap-3">
+                    <span class="orbitron font-extrabold text-rose-500 text-base md:text-lg">B)</span> 
+                    <span id="choice-1" class="choice-text">let</span>
+                </button>
+                <button onclick="submitAnswer(2)" id="btn-2" class="quiz-btn text-left py-3 px-6 text-sm md:text-base text-gray-200 font-medium flex items-center gap-3">
+                    <span class="orbitron font-extrabold text-emerald-400 text-base md:text-lg">C)</span> 
+                    <span id="choice-2" class="choice-text">const</span>
+                </button>
+                <button onclick="submitAnswer(3)" id="btn-3" class="quiz-btn text-left py-3 px-6 text-sm md:text-base text-gray-200 font-medium flex items-center gap-3">
+                    <span class="orbitron font-extrabold text-violet-400 text-base md:text-lg">D)</span> 
+                    <span id="choice-3" class="choice-text">int</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- หน้าจอบังคับทับซ้อนเมื่อ จบเกม / ชนะ / เริ่มเกม -->
+        <div id="overlay-screen" class="absolute inset-0 bg-black/90 z-50 flex flex-col items-center justify-center p-6 text-center transition-all duration-300 hidden">
+            <!-- หัวเรื่องขนาดใหญ่ -->
+            <h1 id="overlay-title" class="orbitron text-5xl md:text-7xl font-extrabold text-red-500 tracking-widest italic mb-2 neon-text-red">GAME OVER</h1>
+            <p id="overlay-subtitle" class="text-gray-300 text-base md:text-xl max-w-md mb-8">คุณถูกออร์คศัตรูโค่นล้มเสียแล้ว! พยายามตอบคำถามเพื่อป้องกันและโจมตีตอบโต้ใหม่อีกครั้งนะ</p>
+            
+            <button onclick="restartGame()" class="relative group px-10 py-4 bg-gradient-to-r from-red-600 to-amber-500 rounded-xl font-bold text-white text-lg md:text-xl shadow-lg transition-all transform hover:scale-105 active:scale-95">
+                <span class="absolute inset-0 w-full h-full bg-white/20 rounded-xl filter blur-sm group-hover:blur-md transition-all"></span>
+                <span class="relative">ท้าทายใหม่อีกครั้ง</span>
+            </button>
+        </div>
+
+    </div>
+
+    <!-- ส่วนอธิบายเกมด้านล่าง -->
+    <div class="mt-6 text-center text-slate-500 text-xs md:text-sm max-w-xl">
+        <p class="mb-1">💡 <strong>วิธีเล่น:</strong> เลือกคำตอบที่ถูกต้องภายในเวลาเพื่อสั่งให้ <strong>Knight</strong> พุ่งเข้าโจมตี <strong>Orc Warrior</strong></p>
+        <p>หากคุณตอบผิดหรือเวลาหมด ศัตรูจะสวนกลับคุณทันที! สะสมชัยชนะด้วยปัญญาของคุณกันเถอะ!</p>
+    </div>
+
+    <script>
+        // --- ข้อมูลคลังคำถาม (Quiz Database) ---
+        const quizData = [
+            {
+                question: "คีย์เวิร์ดตัวใดใน JavaScript ใช้ในการประกาศตัวแปรที่ไม่สามารถเปลี่ยนแปลงค่าใหม่ได้ (Reassigned)?",
+                choices: ["var", "let", "const", "int"],
+                correct: 2 // const
+            },
+            {
+                question: "โปรโตคอลใดใช้สำหรับรับส่งข้อมูลเว็บไซต์ที่มีการเข้ารหัสความปลอดภัยเพื่อป้องกันการดักฟังข้อมูล?",
+                choices: ["HTTP", "HTTPS", "FTP", "SMTP"],
+                correct: 1 // HTTPS
+            },
+            {
+                question: "ข้อใดคือความหมายที่ถูกต้องของคำว่า HTML ในการพัฒนาเว็บเพจ?",
+                choices: ["Hyper Text Markup Language", "High Transfer Mail Link", "Hyperlink and Text Management Local", "Home Tool Markup Language"],
+                correct: 0 // Hyper Text ...
+            },
+            {
+                question: "ในภาษา CSS, พร็อพเพอร์ตี้ใดใช้สำหรับเปลี่ยนสีข้อความของอิลิเมนต์?",
+                choices: ["font-color", "text-color", "color", "background-color"],
+                correct: 2 // color
+            },
+            {
+                question: "คำสั่งใดใน Git ใช้สำหรับคัดลอกโปรเจกต์จากระยะไกล (Remote Repository) มายังเครื่องส่วนบุคคลของคุณ?",
+                choices: ["git clone", "git push", "git pull", "git commit"],
+                correct: 0 // git clone
+            },
+            {
+                question: "ภาษาการเขียนโปรแกรมใดเป็นที่นิยมที่สุดในการนำมาสร้างสคริปต์ทำงานฝั่งเบราว์เซอร์ของลูกค้า (Client-side)?",
+                choices: ["Python", "Java", "C++", "JavaScript"],
+                correct: 3 // JavaScript
+            },
+            {
+                question: "เครื่องมือในข้อใดนิยมนำมาใช้ออกแบบโครงร่างหน้าจอระบบและสร้าง UI Prototype ร่วมกันในทีม?",
+                choices: ["Docker", "Figma", "VS Code", "GitLab"],
+                correct: 1 // Figma
+            },
+            {
+                question: "ชนิดข้อมูลประเภทใดในภาษาโปรแกรมมิ่งที่มีค่าเป็นไปได้เพียง จริง (True) หรือ เท็จ (False) เท่านั้น?",
+                choices: ["String", "Integer", "Boolean", "Null"],
+                correct: 2 // Boolean
+            }
+        ];
+
+        // --- ตัวแปรสำหรับคุมสถานะของเกม (Game State Variables) ---
+        let currentQuestionIdx = 0;
+        let playerHP = 100;
+        let enemyHP = 100;
+        let timer;
+        let timeRemaining = 15;
+        const totalTime = 15;
+        let isAnsweringLocked = false;
+
+        let audioCtx;
+
+        function initAudio() {
+        if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+}
+
+document.body.addEventListener('click', initAudio, { once: true });
+
+        function playSound(type) {
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'hit') {
+                    // เสียงฟันดาบ/ปะทะ
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(120, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1);
+                    osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.3);
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                } else if (type === 'correct') {
+                    // เสียงตอบถูกแนวปิ๊งป่องฮีโร่
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+                    osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2); // G5
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.4);
+                } else if (type === 'wrong') {
+                    // เสียงตอบผิด/โดนโจมตี
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(60, audioCtx.currentTime + 0.3);
+                    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.4);
+                } else if (type === 'victory') {
+                    // เพลงฉลองชัยชนะสั้นๆ
+                    osc.type = 'triangle';
+                    const notes = [523, 587, 659, 698, 784, 880, 988, 1046];
+                    notes.forEach((freq, idx) => {
+                        const noteOsc = audioCtx.createOscillator();
+                        const noteGain = audioCtx.createGain();
+                        noteOsc.type = 'triangle';
+                        noteOsc.frequency.setValueAtTime(freq, audioCtx.currentTime + (idx * 0.12));
+                        noteGain.gain.setValueAtTime(0.15, audioCtx.currentTime + (idx * 0.12));
+                        noteGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + (idx * 0.12) + 0.15);
+                        noteOsc.connect(noteGain);
+                        noteGain.connect(audioCtx.destination);
+                        noteOsc.start(audioCtx.currentTime + (idx * 0.12));
+                        noteOsc.stop(audioCtx.currentTime + (idx * 0.12) + 0.15);
+                    });
+                }
+            } catch (e) {
+                console.log("Audio not allowed yet or not supported:", e);
+            }
+        }
+
+        // --- โหลดคำถามแสดงผลบนหน้าจอระบบ ---
+        function loadQuestion() {
+            isAnsweringLocked = false;
+            
+            // สุ่มจัดลำดับคำถามหากครบลูป
+            if (currentQuestionIdx >= quizData.length) {
+                // วนรอบสลับกลับมาคำถามแรกใหม่เพื่อความไม่สิ้นสุด
+                currentQuestionIdx = 0;
+            }
+
+            const currentData = quizData[currentQuestionIdx];
+            
+            // ล้างสถานะปุ่ม
+            for (let i = 0; i < 4; i++) {
+                const btn = document.getElementById(`btn-${i}`);
+                btn.className = "quiz-btn text-left py-3 px-6 text-sm md:text-base text-gray-200 font-medium flex items-center gap-3";
+                btn.disabled = false;
+            }
+
+            // แสดงข้อความคำถาม
+            document.getElementById("question-number").innerText = `QUESTION ${currentQuestionIdx + 1}:`;
+            document.getElementById("question-text").innerText = currentData.question;
+            
+            // ใส่คำตอบในแต่ละตัวเลือก
+            for (let i = 0; i < 4; i++) {
+                document.getElementById(`choice-${i}`).innerText = currentData.choices[i];
+            }
+
+            // ล้างผู้บรรยายเหตุการณ์
+            document.getElementById("battle-announcer").innerText = "";
+
+            // เริ่มนับเวลาถอยหลังใหม่
+            resetTimer();
+        }
+
+        // --- ระบบจับเวลาถอยหลัง ---
+        function resetTimer() {
+            clearInterval(timer);
+            timeRemaining = totalTime;
+            updateTimerUI();
+            
+            timer = setInterval(() => {
+                timeRemaining--;
+                updateTimerUI();
+                
+                if (timeRemaining <= 0) {
+                    clearInterval(timer);
+                    handleTimeOut();
+                }
+            }, 1000);
+        }
+
+        function updateTimerUI() {
+            const timerBar = document.getElementById("timer-bar-fill");
+            const timerText = document.getElementById("timer-text");
+            const percentage = (timeRemaining / totalTime) * 100;
+            
+            timerBar.style.width = `${percentage}%`;
+            timerText.innerText = timeRemaining;
+
+            // เปลี่ยนสีตัวจับเวลาเมื่อใกล้หมด
+            if (timeRemaining <= 5) {
+                timerBar.classList.remove("bg-amber-500");
+                timerBar.classList.add("bg-red-500");
+                timerText.classList.remove("text-amber-400");
+                timerText.classList.add("text-red-500", "animate-ping");
+            } else {
+                timerBar.classList.remove("bg-red-500");
+                timerBar.classList.add("bg-amber-500");
+                timerText.classList.remove("text-red-500", "animate-ping");
+                timerText.classList.add("text-amber-400");
+            }
+        }
+
+        // --- เหตุการณ์เมื่อเวลาหมด (โดนโจมตีอัตโนมัติ) ---
+        function handleTimeOut() {
+            if (isAnsweringLocked) return;
+            isAnsweringLocked = true;
+            disableAllChoices();
+            
+            document.getElementById("battle-announcer").innerText = "เวลาหมดแล้ว! ศัตรูเริ่มจู่โจม!";
+            document.getElementById("battle-announcer").className = "text-red-500 font-bold text-sm md:text-lg mt-2 tracking-wide neon-text-red text-center h-6";
+            
+            // ออร์คเข้ามาตีผู้เล่น
+            triggerAttackAnimation('enemy');
+        }
+
+        // --- ปิดใช้งานปุ่มทั้งหมดเมื่อเลือกไปแล้ว ---
+        function disableAllChoices() {
+            for (let i = 0; i < 4; i++) {
+                document.getElementById(`btn-${i}`).disabled = true;
+            }
+        }
+
+        // --- ผู้เล่นกดยืนยันเลือกคำตอบ ---
+        function submitAnswer(choiceIdx) {
+            if (isAnsweringLocked) return;
+            isAnsweringLocked = true;
+            clearInterval(timer);
+            disableAllChoices();
+
+            const currentData = quizData[currentQuestionIdx];
+            const correctIdx = currentData.correct;
+            
+            const selectedButton = document.getElementById(`btn-${choiceIdx}`);
+            const correctButton = document.getElementById(`btn-${correctIdx}`);
+
+            if (choiceIdx === correctIdx) {
+                // ตอบถูก
+                selectedButton.classList.add("correct");
+                playSound('correct');
+                document.getElementById("battle-announcer").innerText = "คำตอบถูกต้อง! อัศวินปลดปล่อยพลังโจมตี!";
+                document.getElementById("battle-announcer").className = "text-emerald-400 font-bold text-sm md:text-lg mt-2 tracking-wide neon-text-green text-center h-6";
+                
+                // ให้เวลาดูเล็กน้อยก่อนทำการโจมตี
+                setTimeout(() => {
+                    triggerAttackAnimation('player');
+                }, 600);
+            } else {
+                // ตอบผิด
+                selectedButton.classList.add("wrong");
+                correctButton.classList.add("correct"); // เฉลยคำตอบที่ถูกสีเขียว
+                playSound('wrong');
+                document.getElementById("battle-announcer").innerText = "ตอบผิด! ศัตรูตั้งหลักและสวนกลับกระชั้นชิด!";
+                document.getElementById("battle-announcer").className = "text-red-500 font-bold text-sm md:text-lg mt-2 tracking-wide neon-text-red text-center h-6";
+                
+                setTimeout(() => {
+                    triggerAttackAnimation('enemy');
+                }, 1000);
+            }
+        }
+
+        // --- จัดการอนิเมชันโจมตีและพลังเสียหาย ---
+        function triggerAttackAnimation(attacker) {
+            const playerSprite = document.getElementById("player-sprite");
+            const enemySprite = document.getElementById("enemy-sprite");
+            const gameContainer = document.getElementById("game-container");
+
+            if (attacker === 'player') {
+                // ล้างคลาส อนิเมชันหายใจ แล้วใส่คลาสพุ่งโจมตี
+                playerSprite.classList.remove("idle-player");
+                playerSprite.classList.add("attacking-player");
+
+                setTimeout(() => {
+                    // จังหวะปะทะกลางทาง (ประมาณ 300-400ms จากจุดเริ่มต้น)
+                    playSound('hit');
+                    enemySprite.classList.remove("idle-enemy");
+                    enemySprite.classList.add("hit"); // ศัตรูโดนสั่นแดง
+                    gameContainer.classList.add("shake-screen"); // หน้าจอสั่นสะเทือนเร้าใจ
+                    
+                    // คำนวณความเสียหายแบบสุ่ม
+                    const damage = Math.floor(Math.random() * 15) + 15; // 15-29 ดาเมจ
+                    enemyHP = Math.max(0, enemyHP - damage);
+                    updateHPBars();
+                    showDamagePopUp('enemy', damage);
+                }, 300);
+
+                // คืนค่าอนิมเชันกลับสู่ท่าเตรียมตัว
+                setTimeout(() => {
+                    playerSprite.classList.remove("attacking-player");
+                    playerSprite.classList.add("idle-player");
+                    enemySprite.classList.remove("hit");
+                    enemySprite.classList.add("idle-enemy");
+                    gameContainer.classList.remove("shake-screen");
+
+                    // ตรวจสอบชัยชนะหลังอนิเมชันจบ
+                    checkGameStatus();
+                }, 850);
+
+            } else {
+                // ออร์ค (ศัตรู) พุ่งตีผู้เล่น
+                enemySprite.classList.remove("idle-enemy");
+                enemySprite.classList.add("attacking-enemy");
+
+                setTimeout(() => {
+                    playSound('hit');
+                    playerSprite.classList.remove("idle-player");
+                    playerSprite.classList.add("hit");
+                    gameContainer.classList.add("shake-screen");
+
+                    const damage = Math.floor(Math.random() * 10) + 15; // 15-24 ดาเมจ
+                    playerHP = Math.max(0, playerHP - damage);
+                    updateHPBars();
+                    showDamagePopUp('player', damage);
+                }, 300);
+
+                setTimeout(() => {
+                    enemySprite.classList.remove("attacking-enemy");
+                    enemySprite.classList.add("idle-enemy");
+                    playerSprite.classList.remove("hit");
+                    playerSprite.classList.add("idle-player");
+                    gameContainer.classList.remove("shake-screen");
+
+                    checkGameStatus();
+                }, 850);
+            }
+        }
+
+        // --- แสดงผลเลขลอยดาเมจ (Damage Pop-up) ---
+        function showDamagePopUp(target, damage) {
+            const container = document.getElementById(target === 'player' ? 'player-damage-pos' : 'enemy-damage-pos');
+            
+            const damageEl = document.createElement("div");
+            damageEl.className = "damage-number orbitron text-3xl md:text-5xl font-black italic select-none pointer-events-none drop-shadow-[0_4px_8px_rgba(0,0,0,1)] text-yellow-500";
+            damageEl.innerText = `-${damage}`;
+            
+            container.appendChild(damageEl);
+            
+            // ลบออกเมื่ออนิเมชันจบ
+            setTimeout(() => {
+                damageEl.remove();
+            }, 1000);
+        }
+
+        // --- อัปเดตแถบเลือด (HP Bars) ---
+        function updateHPBars() {
+            // อัปเดตเลือดของผู้เล่น
+            const playerHpBar = document.getElementById("player-hp-bar");
+            const playerHpText = document.getElementById("player-hp-text");
+            playerHpBar.style.width = `${playerHP}%`;
+            playerHpText.innerText = `${playerHP}/100`;
+
+            // เลือดผู้เล่นเหลือน้อยกว่า 30% จะกะพริบแจ้งเตือนแดง
+            if (playerHP <= 30) {
+                playerHpBar.className = "hp-bar-fill h-full bg-gradient-to-r from-red-600 to-amber-500 rounded-sm animate-pulse";
+            } else {
+                playerHpBar.className = "hp-bar-fill h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-sm";
+            }
+
+            // อัปเดตเลือดของศัตรู
+            const enemyHpBar = document.getElementById("enemy-hp-bar");
+            const enemyHpText = document.getElementById("enemy-hp-text");
+            enemyHpBar.style.width = `${enemyHP}%`;
+            enemyHpText.innerText = `${enemyHP}/100`;
+            
+            if (enemyHP <= 30) {
+                enemyHpBar.className = "hp-bar-fill h-full bg-gradient-to-l from-red-600 to-rose-600 rounded-sm animate-pulse";
+            } else {
+                enemyHpBar.className = "hp-bar-fill h-full bg-gradient-to-l from-red-500 to-rose-400 rounded-sm";
+            }
+        }
+
+        // --- เช็คผลแพ้ชนะหลังการคำนวณรอบสเตจจบ ---
+        function checkGameStatus() {
+            const overlay = document.getElementById("overlay-screen");
+            const title = document.getElementById("overlay-title");
+            const subtitle = document.getElementById("overlay-subtitle");
+
+            if (enemyHP <= 0) {
+                // ชนะเกม!!
+                clearInterval(timer);
+                playSound('victory');
+                
+                title.innerText = "VICTORY!";
+                title.className = "orbitron text-5xl md:text-7xl font-extrabold text-emerald-400 tracking-widest italic mb-2 neon-text-green";
+                subtitle.innerText = "สุดยอดความปราดเปรื่อง! คุณสามารถตอบคำถามโค่นล้มราชันย์ออร์คและกอบกู้ความสงบแก่สนามประลองได้สำเร็จ!";
+                
+                overlay.classList.remove("hidden");
+            } else if (playerHP <= 0) {
+                // แพ้เกม
+                clearInterval(timer);
+                playSound('wrong');
+                
+                title.innerText = "GAME OVER";
+                title.className = "orbitron text-5xl md:text-7xl font-extrabold text-red-500 tracking-widest italic mb-2 neon-text-red";
+                subtitle.innerText = "คุณพ่ายแพ้ภัยแก่ออร์คนักรบ! มาลับคมปัญญาและความรู้ของคุณเพื่อกลับมาล้างตาอีกครั้งกันเถอะ";
+                
+                overlay.classList.remove("hidden");
+            } else {
+                // ยังไม่จบเทิร์นถัดไป -> ขึ้นข้อถามถัดไป
+                currentQuestionIdx++;
+                loadQuestion();
+            }
+        }
+
+        // --- เริ่มเกมใหม่ (Restart) ---
+        function restartGame() {
+            // เริ่มต้นสถานะใหม่หมด
+            playerHP = 100;
+            enemyHP = 100;
+            currentQuestionIdx = 0;
+            
+            updateHPBars();
+            
+            // ซ่อนหน้าจอกล่องข้อความ Overlay
+            document.getElementById("overlay-screen").classList.add("hidden");
+            
+            // โหลดคำถามแรก
+            loadQuestion();
+        }
+
+        // --- เตรียมเริ่มต้นใช้งานครั้งแรก ---
+        window.onload = function() {
+            // สับเปลี่ยนคำถามเพื่อสร้างความท้าทายแบบสุ่มในเกม
+            quizData.sort(() => Math.random() - 0.5);
+            
+            // โหลดสเตจแรก
+            loadQuestion();
+        }
+    </script>
+</body>
+</html>
