@@ -1,0 +1,150 @@
+/* ================================================================= */
+        /* [PART 1: CSS STYLE - สำหรับแยกไปบันทึกเป็นไฟล์ "style.css"]             */
+        /* ================================================================= */
+
+        /* CRT Scanlines Retro Screen Overlay */
+        .scanline::after {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 6px 100%;
+            z-index: 99;
+            pointer-events: none;
+            opacity: 0.35;
+        }
+
+        /* Neon & Cyber Glowing Effects */
+        .text-glow-red {
+            text-shadow: 0 0 10px rgba(239, 68, 68, 0.8), 0 0 20px rgba(239, 68, 68, 0.4);
+        }
+        .text-glow-purple {
+            text-shadow: 0 0 10px rgba(139, 92, 246, 0.8), 0 0 20px rgba(139, 92, 246, 0.4);
+        }
+        .neon-text-blue {
+            text-shadow: 0 0 8px rgba(6, 182, 212, 0.8);
+        }
+        .neon-text-red {
+            text-shadow: 0 0 8px rgba(239, 68, 68, 0.8);
+        }
+        .neon-text-purple {
+            text-shadow: 0 0 8px rgba(216, 180, 254, 0.8);
+        }
+
+        /* Slanted Shapes (Fight Game Aesthetic) */
+        .slanted-btn {
+            clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .slanted-btn:hover {
+            transform: skewX(-4deg) scale(1.03);
+        }
+        .slanted-card {
+            clip-path: polygon(15px 0%, 100% 0%, calc(100% - 15px) 100%, 0% 100%);
+            transition: all 0.3s ease;
+        }
+        .slanted-card:hover {
+            transform: translateY(-4px) scale(1.02);
+        }
+
+        /* Arcade Interactive Quiz Buttons */
+        .quiz-btn {
+            position: relative;
+            background: linear-gradient(135deg, #1c0a35 0%, #080214 100%);
+            border: 2px solid #5b21b6;
+            clip-path: polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%);
+            transition: all 0.2s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+        .quiz-btn:hover:not(:disabled) {
+            border-color: #06b6d4;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
+        }
+        .quiz-btn:active:not(:disabled) {
+            transform: scale(0.97);
+        }
+        .quiz-btn.correct {
+            border-color: #10b981 !important;
+            background: linear-gradient(135deg, #064e3b 0%, #022c22 100%) !important;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
+        }
+        .quiz-btn.wrong {
+            border-color: #ef4444 !important;
+            background: linear-gradient(135deg, #7f1d1d 0%, #450a0a 100%) !important;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+        }
+
+        /* Sprite Animations (Idle States) */
+        @keyframes idle-player {
+            0%, 100% { transform: translateY(0) scaleY(1); }
+            50% { transform: translateY(-5px) scaleY(0.97) skewX(-2deg); }
+        }
+        @keyframes idle-enemy {
+            0%, 100% { transform: translateY(0) scaleY(1); }
+            50% { transform: translateY(-4px) scaleY(0.98) skewX(2deg); }
+        }
+        .idle-player {
+            animation: idle-player 1.6s ease-in-out infinite;
+        }
+        .idle-enemy {
+            animation: idle-enemy 1.8s ease-in-out infinite;
+        }
+
+        /* Sprite Combat Animations (Dashing & Shakes) */
+        @keyframes attack-player {
+            0% { transform: translateX(0) scale(1); }
+            15% { transform: translateX(-40px) scale(0.9) skewX(-10deg); }
+            45% { transform: translateX(280px) scale(1.15) rotate(5deg); }
+            75% { transform: translateX(280px) scale(1.1); }
+            100% { transform: translateX(0) scale(1); }
+        }
+        @keyframes attack-enemy {
+            0% { transform: translateX(0) scale(1); }
+            15% { transform: translateX(40px) scale(0.9) skewX(10deg); }
+            45% { transform: translateX(-280px) scale(1.15) rotate(-5deg); }
+            75% { transform: translateX(-280px) scale(1.1); }
+            100% { transform: translateX(0) scale(1); }
+        }
+        .attacking-player {
+            animation: attack-player 0.75s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+        }
+        .attacking-enemy {
+            animation: attack-enemy 0.75s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+        }
+
+        @keyframes damage-shake {
+            0%, 100% { transform: translateX(0); filter: brightness(1) invert(0); }
+            20%, 60% { transform: translateX(-15px); filter: brightness(1.8) sepia(1) saturate(10) hue-rotate(-50deg) invert(0.3); }
+            40%, 80% { transform: translateX(15px); filter: brightness(1.8) sepia(1) saturate(10) hue-rotate(-50deg) invert(0.3); }
+        }
+        .hit {
+            animation: damage-shake 0.45s ease-in-out forwards !important;
+        }
+
+        @keyframes screen-shake-anim {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            10%, 30%, 50%, 70%, 90% { transform: translate(-8px, 6px) rotate(-1deg); }
+            20%, 40%, 60%, 80% { transform: translate(8px, -6px) rotate(1deg); }
+        }
+        .shake-screen {
+            animation: screen-shake-anim 0.4s ease-in-out;
+        }
+
+        @keyframes float-damage {
+            0% { opacity: 0; transform: translateY(10px) scale(0.6); }
+            20% { opacity: 1; transform: translateY(-50px) scale(1.4); }
+            80% { opacity: 1; transform: translateY(-75px) scale(1); }
+            100% { opacity: 0; transform: translateY(-100px) scale(0.8); }
+        }
+        .damage-number {
+            animation: float-damage 0.9s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+        }
+
+        .hp-bar-fill {
+            transition: width 0.35s cubic-bezier(0.1, 0.8, 0.3, 1);
+        }
+        /* ================================================================= */
+        /* [END OF CSS STYLE]                                                */
+        /* ================================================================= */
+    
